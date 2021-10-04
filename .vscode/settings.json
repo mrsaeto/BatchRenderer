@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "cglm.h": "c",
-        "glfw3.h": "c",
-        "platform.h": "c"
-    }
-}
