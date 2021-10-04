@@ -4,7 +4,7 @@
 #include "basic.h"
 
 #define INPUT_KEY_BUFFER_SIZE 128
-typedef struct {
+struct Platform {
     void *native_window;
 
     int window_width;
@@ -12,14 +12,20 @@ typedef struct {
 
     bool window_closed;
 
+    //Input state
     u8 key_state[INPUT_KEY_BUFFER_SIZE];
 
     float mouse_x;
     float mouse_y;
-} Platform;
 
-Platform *create_platform(char *title, int width, int height);
-void update_platform(Platform *platform);
+    //Polling functions
+    bool (*is_key_down)(int);
+    bool (*is_key_pressed)(int);
+    bool (*is_key_released)(int);
+};
+
+struct Platform *create_platform(char *title, int width, int height);
+void update_platform(struct Platform *platform);
 
 typedef struct {
     int size;
@@ -27,6 +33,6 @@ typedef struct {
 } Buffer;
 
 Buffer read_file_into_buffer(char *path);
-int find_line_in_buffer(Buffer file, char *line);
+int find_line_in_buffer(Buffer buffer, char *line);
 
 #endif
