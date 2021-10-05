@@ -5,110 +5,164 @@
 
 static struct Platform g_platform;
 
-static void window_closed_callback(GLFWwindow *window) {
+static void windowClosedCallback(GLFWwindow *window) {
     struct Platform *platform = glfwGetWindowUserPointer(window);
-    platform->window_closed = true;
+    platform->windowClosed = true;
 }
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+static void windowKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     struct Platform *platform = glfwGetWindowUserPointer(window);
 
-    bool is_down = (action == GLFW_PRESS);
-    bool was_down = (action == GLFW_RELEASE) || (action == GLFW_REPEAT);
+    bool isDown = (action == GLFW_PRESS) || (action == GLFW_REPEAT);
+    bool wasDown = (action == GLFW_RELEASE) || (action == GLFW_REPEAT);
 
     if (key >= 0 && key < INPUT_KEY_BUFFER_SIZE) {
-        bool is_pressed = is_down && !was_down;
-        bool is_released = !is_down && !was_down;
+        bool isPressed = isDown && !wasDown;
+        bool isReleased = !isDown && wasDown;
 
         u8 state = 0;
-        state = (state | is_released) << 1;
-        state = (state | is_pressed) << 1;
-        state |= is_down;
+        state = (state | isPressed) << 1;
+        state = (state | isReleased) << 1;
+        state |= isDown;
 
-        platform->key_state[key] = state;
+        platform->keyState[key] = state;
     }
 }
 
-static void mouse_position_callback(GLFWwindow *window, double xpos, double ypos) {
+static void windowMousePosCallback(GLFWwindow *window, double xpos, double ypos) {
     struct Platform *platform = glfwGetWindowUserPointer(window);
 
-    platform->mouse_x = (float)xpos;
-    platform->mouse_y = (float)ypos;
+    platform->mouseX = (float)xpos;
+    platform->mouseY = (float)ypos;
 }
 
-//NOTE: these functions access global data
-static bool f_is_key_down(int key) {
+static void windowMouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+    struct Platform *platform = glfwGetWindowUserPointer(window);
+
+    bool isDown = (action == GLFW_PRESS);
+    bool wasDown = (action == GLFW_RELEASE) || (action == GLFW_REPEAT);
+
+    if (button >= 0 && button < INPUT_BUTTON_BUFFER_SIZE) {
+        bool isPressed = isDown && !wasDown;
+        bool isReleased = !isDown && wasDown;
+
+        u8 state = 0;
+        state = (state | isPressed) << 1;
+        state = (state | isReleased) << 1;
+        state |= isDown;
+
+        platform->buttonState[button] = state;
+    }
+}
+
+//TODO: do we want these functions to access global data?
+static bool fp_isKeyDown(int key) {
     if (key < 0 || key >= INPUT_KEY_BUFFER_SIZE) {
         return false;
     }
 
-    u8 state = g_platform.key_state[key];
+    u8 state = g_platform.keyState[key];
     return state & 0b0001;
 }
 
-static bool f_is_key_pressed(int key) {
+static bool fp_isKeyPressed(int key) {
     if (key < 0 || key >= INPUT_KEY_BUFFER_SIZE) {
         return false;
     }
 
-    u8 state = g_platform.key_state[key];
-    return state & 0b0010;
-}
-
-//TODO: this function does not work
-static bool f_is_key_released(int key) {
-    if (key < 0 || key >= INPUT_KEY_BUFFER_SIZE) {
-        return false;
-    }
-
-    u8 state = g_platform.key_state[key];
+    u8 state = g_platform.keyState[key];
     return state & 0b0100;
 }
 
-struct Platform *create_platform(char *title, int width, int height) {
+static bool fp_isKeyReleased(int key) {
+    if (key < 0 || key >= INPUT_KEY_BUFFER_SIZE) {
+        return false;
+    }
+
+    u8 state = g_platform.keyState[key];
+    return state & 0b0010;
+}
+
+static bool fp_isMouseButtonDown(int button) {
+    if (button < 0 || button >= INPUT_BUTTON_BUFFER_SIZE) {
+        return false;
+    }
+
+    u8 state = g_platform.buttonState[button];
+    return state & 0b0001;
+}
+
+static bool fp_isMouseButtonPressed(int button) {
+    if (button < 0 || button >= INPUT_BUTTON_BUFFER_SIZE) {
+        return false;
+    }
+
+    u8 state = g_platform.buttonState[button];
+    return state & 0b0100;
+}
+
+static bool fp_isMouseButtonReleased(int button) {
+    if (button < 0 || button >= INPUT_BUTTON_BUFFER_SIZE) {
+        return false;
+    }
+
+    u8 state = g_platform.buttonState[button];
+    return state & 0b0010;
+}
+
+struct Platform *salamander_createPlatform(char *title, int width, int height) {
     struct Platform *platform = &g_platform;
 
     if (glfwInit()) {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_SCALE_TO_MONITOR, true);
         glfwWindowHint(GLFW_RESIZABLE, false);
 
-        platform->native_window = glfwCreateWindow(width, height, title, NULL, NULL);
+        platform->nativeWindow = glfwCreateWindow(width, height, title, NULL, NULL);
         
         //Set callbacks
-        glfwSetWindowUserPointer(platform->native_window, platform);
-        glfwSetWindowCloseCallback(platform->native_window, window_closed_callback);
-        glfwSetKeyCallback(platform->native_window, key_callback);
-        glfwSetCursorPosCallback(platform->native_window, mouse_position_callback);
+        glfwSetWindowUserPointer(platform->nativeWindow, platform);
+        glfwSetWindowCloseCallback(platform->nativeWindow, windowClosedCallback);
+        glfwSetKeyCallback(platform->nativeWindow, windowKeyCallback);
+        glfwSetCursorPosCallback(platform->nativeWindow, windowMousePosCallback);
+        glfwSetMouseButtonCallback(platform->nativeWindow, windowMouseButtonCallback);
         
-        glfwMakeContextCurrent(platform->native_window);
+        glfwMakeContextCurrent(platform->nativeWindow);
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-        platform->window_width = width;
-        platform->window_height = height;
+        platform->windowWidth = width;
+        platform->windowHeight = height;
 
-        platform->is_key_down = f_is_key_down;
-        platform->is_key_pressed = f_is_key_pressed;
-        platform->is_key_released = f_is_key_released;
+        platform->isKeyDown = fp_isKeyDown;
+        platform->isKeyPressed = fp_isKeyPressed;
+        platform->isKeyReleased = fp_isKeyReleased;
+
+        platform->isMouseButtonDown = fp_isMouseButtonDown;
+        platform->isMouseButtonPressed = fp_isMouseButtonPressed;
+        platform->isMouseButtonReleased = fp_isMouseButtonReleased;
     }
 
     return platform;
 }
 
-void update_platform(struct Platform *platform) {
+void salamander_updatePlatform(struct Platform *platform) {
     for (int i = 0; i < INPUT_KEY_BUFFER_SIZE; i++) {
-        platform->key_state[i] &= 0b0001;
+        platform->keyState[i] &= 0b0001;
     }
 
-    glfwSwapBuffers(platform->native_window);
+    for (int i = 0; i < INPUT_BUTTON_BUFFER_SIZE; i++) {
+        platform->buttonState[i] &= 0b0001;
+    }
+
+    glfwSwapBuffers(platform->nativeWindow);
     glfwPollEvents();
 }
 
 //TODO: these dont belong here
-Buffer read_file_into_buffer(char *path) {
+Buffer readFileIntoBuffer(char *path) {
     Buffer file = { 0 };
 
     FILE *handle;
@@ -129,29 +183,29 @@ Buffer read_file_into_buffer(char *path) {
     return file;
 }
 
-int find_line_in_buffer(Buffer buffer, char *line) {
-    const int temp_buffer_size = 1024;
+int findLineInBuffer(Buffer buffer, char *line) {
+    const int tempBufferSize = 1024;
 
     char temp[1024] = { 0 };
-    int last_offset = 0;
+    int lastOffset = 0;
 
     while (true) {
         int offset = 0;
-        char *current = buffer.data + last_offset;
+        char *current = buffer.data + lastOffset;
 
         while (current[offset] != '\n' && current[offset] != '\0') {
             offset++;
         }
 
-        memcpy_s(temp, temp_buffer_size, current, offset);
-        if (strncmp(temp, line, strnlen(line, temp_buffer_size)) == 0) {
-            return last_offset;
+        memcpy_s(temp, tempBufferSize, current, offset);
+        if (strncmp(temp, line, strnlen(line, tempBufferSize)) == 0) {
+            return lastOffset;
         }
-        memset(temp, 0, temp_buffer_size);
+        memset(temp, 0, tempBufferSize);
 
         if (current[offset] == '\0') break;
 
-        last_offset += ++offset;
+        lastOffset += ++offset;
     }
 
     return -1;

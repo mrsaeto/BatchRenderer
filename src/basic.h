@@ -1,8 +1,6 @@
 #ifndef SALAMANDER_BASIC_H
 #define SALAMANDER_BASIC_H
 
-#define SALAMANDER_DEBUG
-
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -18,6 +16,10 @@ typedef int64_t i64;
 
 typedef float f32;
 typedef double f64;
+
+//TODO: get a more accurate approximation of pi
+#define PI 3.14159265359
+#define DEGREES_TO_RADIANS(d) ((d)*(PI / 180))
 
 #include <stdio.h>
 #include <stdlib.h>

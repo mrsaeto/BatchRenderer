@@ -6,25 +6,37 @@
 
 #include <glad/glad.h>
 
+/*
+ * TODO LIST:
+ * relative file paths
+ * frame rate limiting main loop
+ * FIGURE THIS CAMERA STUFF OUT
+ */
+
 struct Image {
     void *pixels;
     int width;
     int height;
 
-    int bytes_per_pixel;
+    int bytesPerPixel;
     int pitch;
 };
 
-struct Image load_image(char *path) {
+struct Image salamander_loadImage(char *path) {
     struct Image image = { 0 };
 
-    image.pixels = stbi_load(path, &image.width, &image.height, &image.bytes_per_pixel, 0);
-    image.pitch = image.width * image.bytes_per_pixel;
+    //TODO: do we even want this?
+#ifndef SALAMANDER_SCREEN_SPACE
+    stbi_set_flip_vertically_on_load(true);
+#endif
+
+    image.pixels = stbi_load(path, &image.width, &image.height, &image.bytesPerPixel, 0);
+    image.pitch = image.width * image.bytesPerPixel;
 
     return image;
 }
 
-struct Texture create_texture(struct Image image) {
+struct Texture salamander_createTextureFromImage(struct Image image) {
     struct Texture texture = { 0 };
 
     texture.width = image.width;
@@ -44,53 +56,113 @@ struct Texture create_texture(struct Image image) {
     return texture;
 }
 
-struct Texture load_texture(char *path) {
-    struct Image image = load_image(path);
-    struct Texture texture = create_texture(image);
+struct Texture salamander_loadTexture(char *path) {
+    struct Image image = salamander_loadImage(path);
+    struct Texture texture = salamander_createTextureFromImage(image);
 
     free(image.pixels);
 
     return texture;
 }
 
-int main(int argc, char **argv) {
-    struct Platform *platform = create_platform("SALAMANDER", 1280, 720);
-    struct Renderer *renderer = create_renderer(100);
+struct Camera {
+    vec2 position;
 
-    struct Shader shader = load_shader("C:\\dev\\Salamander\\data\\default.glsl");
-    use_shader(shader);
+    float rotation;
+    float zoom;
 
-    set_view_projection_matrix(renderer, 0.0f, platform->window_width, platform->window_height, 0.0f);
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
+};
+
+void salamander_setProjection(struct Camera *camera, float left, float right, float top, float bottom) {
+    glm_ortho(left, right, bottom, top, -1.0f, 1.0f, camera->projectionMatrix);
+}
+
+//TODO: we don't really need to pass a pointer
+void salamander_setViewProjection(struct Shader shader, struct Camera *camera) {
+    glm_mat4_identity(camera->viewMatrix);
+    glm_translate(camera->viewMatrix, (vec3){ camera->position[0], camera->position[1], 0.0f });
+
+    mat4 inverseView;
+    glm_mat4_inv(camera->viewMatrix, inverseView);
+
+    glm_rotate(inverseView, DEGREES_TO_RADIANS(camera->rotation), (vec3){ 0.0f, 0.0f, 1.0f });
+    glm_scale(inverseView, (vec3){ camera->zoom, camera->zoom, 0.0f });
 
     mat4 vp;
-    get_view_projection_matrix(renderer, vp);
-    set_mat4_uniform(shader, "u_view_projection", vp);
+    glm_mat4_mul(camera->projectionMatrix, inverseView, vp);
 
-    vec2 render_scale = { 3.0f, 3.0f };
+    salamander_setShaderMat4(shader, "u_viewProjection", vp);
+}
+
+int main(int argc, char **argv) {
+    struct Platform *platform = salamander_createPlatform("SALAMANDER", 1280, 720);
+    struct Renderer *renderer = salamander_createRenderer(100);
+
+    struct Shader shader = salamander_loadShader("C:\\dev\\Salamander\\data\\default.glsl");
+
+    struct Camera camera = { 0 };
+    camera.zoom = 1.0f;
+
+    salamander_setProjection(&camera, 0.0f, platform->windowWidth, 0.0f, platform->windowHeight);
+
+    vec2 renderScale = { 3.0f, 3.0f };
 
     vec2 position = { 100.0f, 100.0f };
     float speed = 0.25f;
 
-    struct Texture texture = load_texture("C:\\dev\\Salamander\\data\\test.png");
-    struct Texture texture2 = load_texture("C:\\dev\\Salamander\\data\\test2.png");
+    struct Texture texture = salamander_loadTexture("C:\\dev\\Salamander\\data\\test.png");
+    struct Texture texture2 = salamander_loadTexture("C:\\dev\\Salamander\\data\\test2.png");
 
-    while (!platform->window_closed) {
-        if (platform->is_key_down('D')) position[0] += speed;
-        if (platform->is_key_down('A')) position[0] -= speed;
+    while (!platform->windowClosed) {
+        printf("%f\n", camera.zoom);
 
-        if (platform->is_key_down('S')) position[1] += speed;
-        if (platform->is_key_down('W')) position[1] -= speed;
+        if (platform->isKeyDown('D')) camera.position[0] += speed;
+        if (platform->isKeyDown('A')) camera.position[0] -= speed;
 
-        clear_renderer();
+        if (platform->isKeyDown('S')) camera.position[1] += speed;
+        if (platform->isKeyDown('W')) camera.position[1] -= speed;
 
-        //add_quad(renderer, position[0], position[1], 64, 64, (vec4){ 0.188f, 0.215f, 0.47f, 1.0f });
+        if (platform->isKeyDown('Z')) camera.zoom += 0.001f;
+        if (platform->isKeyDown('X') && camera.zoom > 0.0f) camera.zoom -= 0.001f;
 
-        add_texture(renderer, texture, position, render_scale);
-        add_texture(renderer, texture2, (vec2){ 200.0f, 100.0f }, render_scale);
+        if (platform->isKeyDown('R')) camera.rotation += 0.1f;
+        if (platform->isKeyDown('E')) camera.rotation -= 0.1f;
 
-        flush_quads(renderer);
+        salamander_clearRenderer((vec4){ 0.0f, 0.0f, 0.0f, 1.0f });
 
-        update_platform(platform);
+        //DEBUG STUFF
+        /*glBegin(GL_LINES);
+
+        for (float y = 1; y >= -1.0f; y -= 1.0f / 16.0f) {
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex2f(-1.0f, y);
+
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex2f(1.0f, y);
+        }
+
+        for (float x = 1; x >= -1.0f; x -= 1.0f / 16.0f) {
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex2f(x, 1.0f);
+
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex2f(x, -1.0f);
+        }
+
+        glEnd();*/
+
+        salamander_useShader(shader);
+        salamander_setViewProjection(shader, &camera);
+
+        salamander_drawTexture(renderer, texture, (vec2){ 0.0f, 0.0f }, renderScale);
+        salamander_drawTexture(renderer, texture2, (vec2){ 100.0f, 100.0f }, renderScale);
+
+        salamander_flushRenderer(renderer);
+        salamander_useShader(NO_SHADER);
+
+        salamander_updatePlatform(platform);
     }
 
     return 0;

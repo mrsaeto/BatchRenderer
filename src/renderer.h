@@ -6,6 +6,7 @@
 struct Shader {
     u32 id;
 };
+#define NO_SHADER (struct Shader) { 0 }
 
 struct Texture {
     int id;
@@ -13,22 +14,20 @@ struct Texture {
     int height;
 };
 
-struct Shader load_shader(char *path);
-void use_shader(struct Shader shader);
+struct Shader salamander_loadShader(char *path);
+void salamander_useShader(struct Shader shader);
 
-void set_mat4_uniform(struct Shader shader, char *uniform, mat4 m);
+void salamander_setShaderMat4(struct Shader shader, char *uniform, mat4 matrix);
 
 struct Renderer;
 
-struct Renderer *create_renderer(int max_quads_per_batch);
-void set_view_projection_matrix(struct Renderer *renderer, float left, float right, float bottom, float top);
-void get_view_projection_matrix(struct Renderer *renderer, mat4 m);
+struct Renderer *salamander_createRenderer(int maxQuadsPerBatch);
 
-void clear_renderer();
+void salamander_clearRenderer(vec4 colour);
 
-void add_quad(struct Renderer *renderer, float x, float y, float width, float height, vec4 colour);
-void add_texture(struct Renderer *renderer, struct Texture texture, vec2 position, vec2 scale);
+void salamander_drawQuad(struct Renderer *renderer, vec2 position, vec2 size, vec4 colour);
+void salamander_drawTexture(struct Renderer *renderer, struct Texture texture, vec2 position, vec2 scale);
 
-void flush_quads(struct Renderer *renderer);
+void salamander_flushRenderer(struct Renderer *renderer);
 
 #endif

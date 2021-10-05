@@ -3,48 +3,49 @@
 
 #include "glad/glad.h"
 
-static struct Shader create_shader(const char *vertex_shader_source, const char *fragment_shader_source) {
+static struct Shader createShader(const char *vertexShaderSource, const char *fragmentShaderSource) {
     struct Shader shader = { 0 };
     int result;
 
-    if (vertex_shader_source && fragment_shader_source) {
-        u32 vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
-        glCompileShader(vertex_shader);
+    if (vertexShaderSource && fragmentShaderSource) {
 
-        glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &result);
+        u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+        glCompileShader(vertexShader);
+
+        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
         if (!result) {
-            int log_length;
+            int logLength;
             char message[1024];
-            glGetShaderInfoLog(vertex_shader, 1024, &log_length, message);
+            glGetShaderInfoLog(vertexShader, 1024, &logLength, message);
 
             printf("ERROR compiling vertex shader!\n%s\n", message);
         }
 
-        u32 fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
-        glCompileShader(fragment_shader);
+        u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+        glCompileShader(fragmentShader);
 
-        glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &result);
+        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
         if (!result) {
-            int log_length;
+            int logLength;
             char message[1024];
-            glGetShaderInfoLog(fragment_shader, 1024, &log_length, message);
+            glGetShaderInfoLog(fragmentShader, 1024, &logLength, message);
 
             printf("ERROR compiling fragment shader!\n%s\n", message);
         }
 
         shader.id = glCreateProgram();
 
-        glAttachShader(shader.id, vertex_shader);
-        glAttachShader(shader.id, fragment_shader);
+        glAttachShader(shader.id, vertexShader);
+        glAttachShader(shader.id, fragmentShader);
 
         glLinkProgram(shader.id);
         glGetProgramiv(shader.id, GL_LINK_STATUS, &result);
         if (!result) {
-            int log_length;
+            int logLength;
             char message[1024];
-            glGetProgramInfoLog(shader.id, 1024, &log_length, message);
+            glGetProgramInfoLog(shader.id, 1024, &logLength, message);
 
             printf("ERROR linking shader!\n%s\n", message);
         }
@@ -53,74 +54,77 @@ static struct Shader create_shader(const char *vertex_shader_source, const char 
         glValidateProgram(shader.id);
         glGetProgramiv(shader.id, GL_VALIDATE_STATUS, &result);
         if (!result) {
-            int log_length;
+            int logLength;
             char message[1024];
-            glGetProgramInfoLog(shader.id, 1024, &log_length, message);
+            glGetProgramInfoLog(shader.id, 1024, &logLength, message);
 
             printf("ERROR validating shader!\n%s\n", message);
         }
 #endif
 
-        glDeleteShader(vertex_shader);
-        glDeleteShader(fragment_shader);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
     }
 
     return shader;
 }
 
-struct Shader load_shader(char *path) {
-    Buffer file = read_file_into_buffer(path);
-    int copy_size = 0;
+struct Shader salamander_loadShader(char *path) {
+    Buffer file = readFileIntoBuffer(path);
+    int copySize = 0;
 
-    int vs_len = strlen("#VERTEX_SHADER");
-    int fs_len = strlen("#FRAGMENT_SHADER");
+    int vsLen = strlen("#VERTEX_SHADER");
+    int fsLen = strlen("#FRAGMENT_SHADER");
 
-    int vertex_shader_offset = find_line_in_buffer(file, "#VERTEX_SHADER") + vs_len;
-    int fragment_shader_offset = find_line_in_buffer(file, "#FRAGMENT_SHADER") + fs_len;
+    int vertexShaderOffset = findLineInBuffer(file, "#VERTEX_SHADER") + vsLen;
+    int fragmentShaderOffset = findLineInBuffer(file, "#FRAGMENT_SHADER") + fsLen;
 
-    char *vertex_shader_source = NULL;
-    char *fragment_shader_source = NULL;
+    char *vertexShaderSource = NULL;
+    char *fragmentShaderSource = NULL;
 
-    if (vertex_shader_offset != -1 && fragment_shader_offset != -1) {
-        int vertex_shader_size = ((fragment_shader_offset - 1) - fs_len) - vertex_shader_offset;
-        vertex_shader_source = malloc(vertex_shader_size);
-        memset(vertex_shader_source, 0, vertex_shader_size);
+    if (vertexShaderOffset != -1 && fragmentShaderOffset != -1) {
 
-        copy_size = vertex_shader_size - 1;
-        memcpy_s(vertex_shader_source, copy_size, file.data + vertex_shader_offset, copy_size);
+        int vertexShaderSize = ((fragmentShaderOffset - 1) - fsLen) - vertexShaderOffset;
+        vertexShaderSource = malloc(vertexShaderSize);
+        memset(vertexShaderSource, 0, vertexShaderSize);
 
-        int fragment_shader_size = file.size - (fragment_shader_offset - 1);
-        fragment_shader_source = malloc(fragment_shader_size);
-        memset(fragment_shader_source, 0, fragment_shader_size);
+        copySize = vertexShaderSize - 1;
+        memcpy_s(vertexShaderSource, copySize, file.data + vertexShaderOffset, copySize);
 
-        copy_size = fragment_shader_size - 1;
-        memcpy_s(fragment_shader_source, copy_size, file.data + fragment_shader_offset, copy_size);
+        int fragmentShaderSize = file.size - (fragmentShaderOffset - 1);
+        fragmentShaderSource = malloc(fragmentShaderSize);
+        memset(fragmentShaderSource, 0, fragmentShaderSize);
+
+        copySize = fragmentShaderSize - 1;
+        memcpy_s(fragmentShaderSource, copySize, file.data + fragmentShaderOffset, copySize);
+
     }
 
-    struct Shader shader = create_shader(vertex_shader_source, fragment_shader_source);
+    struct Shader shader = createShader(vertexShaderSource, fragmentShaderSource);
 
-    free(vertex_shader_source);
-    free(fragment_shader_source);
+    free(vertexShaderSource);
+    free(fragmentShaderSource);
     free(file.data);
 
     return shader;
 }
 
-void use_shader(struct Shader shader) {
+void salamander_useShader(struct Shader shader) {
     glUseProgram(shader.id);
 }
 
-void set_mat4_uniform(struct Shader shader, char *uniform, mat4 m) {
+void salamander_setShaderMat4(struct Shader shader, char *uniform, mat4 matrix) {
     int location = glGetUniformLocation(shader.id, uniform);
-    glUniformMatrix4fv(location, 1, GL_FALSE, &m[0][0]);
+    glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
 }
 
 struct Vertex {
     vec4 position;
     vec4 colour;
 
-    vec2 texture_coordinates;
-    float texture_index;
+    vec2 textureCoordinates;
+    float textureIndex;
 };
 
 #define VERTICES_PER_QUAD 4
@@ -128,49 +132,37 @@ struct Vertex {
 
 #define RENDERER_TEXTURE_SLOTS 32
 struct Renderer {
-    u32 max_quads_per_batch;
+    u32 maxQuadsPerBatch;
 
     u32 vao;
     u32 vbo;
     u32 ibo;
 
     struct Vertex *buffer;
-    u32 quad_count;
+    u32 currentQuadCount;
 
-    struct Texture texture_slots[RENDERER_TEXTURE_SLOTS];
-    int current_slot;
-
-    mat4 view_projection;
+    struct Texture textureSlots[RENDERER_TEXTURE_SLOTS];
+    int currentTextureIndex;
 };
 
 static struct Renderer g_renderer;
 
-//TODO: remove this copy pasta function
-void GLAPIENTRY
-MessageCallback( GLenum source,
-                 GLenum type,
-                 GLuint id,
-                 GLenum severity,
-                 GLsizei length,
-                 const GLchar* message,
-                 const void* userParam )
-{
-  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
-}
-
-struct Renderer *create_renderer(int max_quads_per_batch) {
-    struct Renderer *renderer = &g_renderer;
-    renderer->max_quads_per_batch = max_quads_per_batch;
-
-    //NOTE: opengl error callback
 #ifdef SALAMANDER_DEBUG
-    glEnable              ( GL_DEBUG_OUTPUT );
-    glDebugMessageCallback( MessageCallback, 0 );
+void errorCallback(u32 source, u32 type, u32 id, u32 severity, int length, const char* message, const void* userParam) {
+    char *typeString = (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "");
+    printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", typeString, type, severity, message );
+}
 #endif
 
-    //NOTE: create buffers
+struct Renderer *salamander_createRenderer(int maxQuadsPerBatch) {
+    struct Renderer *renderer = &g_renderer;
+    renderer->maxQuadsPerBatch = maxQuadsPerBatch;
+
+#ifdef SALAMANDER_DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(errorCallback, 0);
+#endif
+
     glCreateVertexArrays(1, &renderer->vao);
     glBindVertexArray(renderer->vao);
 
@@ -184,86 +176,66 @@ struct Renderer *create_renderer(int max_quads_per_batch) {
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (const void *)offsetof(struct Vertex, colour));
 
     glEnableVertexArrayAttrib(renderer->vbo, 2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (const void *)offsetof(struct Vertex, texture_coordinates));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (const void *)offsetof(struct Vertex, textureCoordinates));
 
     glEnableVertexArrayAttrib(renderer->vbo, 3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (const void *)offsetof(struct Vertex, texture_index));
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (const void *)offsetof(struct Vertex, textureIndex));
 
     glCreateBuffers(1, &renderer->ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->ibo);
 
-    renderer->buffer = malloc(sizeof(struct Vertex) * VERTICES_PER_QUAD * max_quads_per_batch);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(struct Vertex) * VERTICES_PER_QUAD * max_quads_per_batch, NULL, GL_DYNAMIC_DRAW);
+    renderer->buffer = malloc(sizeof(struct Vertex) * VERTICES_PER_QUAD * maxQuadsPerBatch);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(struct Vertex) * VERTICES_PER_QUAD * maxQuadsPerBatch, NULL, GL_DYNAMIC_DRAW);
 
-    u32 *index_buffer = malloc(sizeof(u32) * INDICIES_PER_QUAD * max_quads_per_batch);
-    for (int i = 0, offset = 0; i < INDICIES_PER_QUAD * max_quads_per_batch; i += 6) {
-        index_buffer[i + 0] = offset + 0;
-        index_buffer[i + 1] = offset + 1;
-        index_buffer[i + 2] = offset + 2;
+    u32 *indexBuffer = malloc(sizeof(u32) * INDICIES_PER_QUAD * maxQuadsPerBatch);
+    for (int i = 0, offset = 0; i < INDICIES_PER_QUAD * maxQuadsPerBatch; i += 6) {
+        indexBuffer[i + 0] = offset + 0;
+        indexBuffer[i + 1] = offset + 1;
+        indexBuffer[i + 2] = offset + 2;
 
-        index_buffer[i + 3] = offset + 2;
-        index_buffer[i + 4] = offset + 3;
-        index_buffer[i + 5] = offset + 0;
+        indexBuffer[i + 3] = offset + 2;
+        indexBuffer[i + 4] = offset + 3;
+        indexBuffer[i + 5] = offset + 0;
 
         offset += 4;
     }
 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * INDICIES_PER_QUAD * max_quads_per_batch, index_buffer, GL_STATIC_DRAW);
-    free(index_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * INDICIES_PER_QUAD * maxQuadsPerBatch, indexBuffer, GL_STATIC_DRAW);
+    free(indexBuffer);
 
     return renderer;
 }
 
-void set_view_projection_matrix(struct Renderer *renderer, float left, float right, float bottom, float top) {
-    mat4 projection;
-    glm_ortho(left, right, bottom, top, -1.0f, 1.0f, projection);
-
-    mat4 view;
-    glm_mat4_identity(view);
-
-    glm_mat4_mul(projection, view, renderer->view_projection);
-}
-
-void get_view_projection_matrix(struct Renderer *renderer, mat4 m) {
-    glm_mat4_copy(renderer->view_projection, m);
-}
-
-void clear_renderer() {
+void salamander_clearRenderer(vec4 colour) {
+    glClearColor(colour[0], colour[1], colour[2], colour[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void add_quad(struct Renderer *renderer, float x, float y, float width, float height, vec4 colour) {
-    int offset = renderer->quad_count * VERTICES_PER_QUAD;
+void salamander_drawQuad(struct Renderer *renderer, vec2 position, vec2 size, vec4 colour) {
+    int offset = renderer->currentQuadCount * VERTICES_PER_QUAD;
 
-    mat4 position;
-    glm_mat4_identity(position);
-    glm_translate(position, (vec3){ x, y, 0.0f });
+    mat4 positionMatrix;
+    glm_mat4_identity(positionMatrix);
+    glm_translate(positionMatrix, (vec3){ position[0], position[1], 0.0f });
 
-    mat4 scale;
-    glm_mat4_identity(scale);
-    glm_scale(scale, (vec3){ width, height, 1.0f });
+    mat4 scaleMatrix;
+    glm_mat4_identity(scaleMatrix);
+    glm_scale(scaleMatrix, (vec3){ size[0], size[1], 1.0f });
 
     mat4 transform;
-    glm_mat4_mul(position, scale, transform);
+    glm_mat4_mul(positionMatrix, scaleMatrix, transform);
 
     //proper screen space geometry
-    vec4 quad_vertex_positions[4] = {
+    vec4 quadVertexPositions[4] = {
             { 0.0f, 0.0f, 0.0f, 1.0f },
             { 1.0f, 0.0f, 0.0f, 1.0f },
             { 1.0f, 1.0f, 0.0f, 1.0f },
             { 0.0f, 1.0f, 0.0f, 1.0f }
     };
 
-    vec2 texture_coords[4] = {
-            { 0.0f, 0.0f },
-            { 1.0f, 0.0f },
-            { 1.0f, 1.0f },
-            { 0.0f, 1.0f }
-    };
-
     for (int i = 0; i < 4; i++) {
         vec4 p;
-        glm_mat4_mulv(transform, quad_vertex_positions[i], p);
+        glm_mat4_mulv(transform, quadVertexPositions[i], p);
 
         //NOTE: a bit verbose but makes more sense than a memcpy
         renderer->buffer[offset + i].position[0] = p[0];
@@ -276,42 +248,38 @@ void add_quad(struct Renderer *renderer, float x, float y, float width, float he
         renderer->buffer[offset + i].colour[2] = colour[2];
         renderer->buffer[offset + i].colour[3] = colour[3];
 
-        renderer->buffer[offset + i].texture_coordinates[0] = texture_coords[i][0];
-        renderer->buffer[offset + i].texture_coordinates[1] = texture_coords[i][1];
-        renderer->buffer[offset + i].texture_coordinates[2] = texture_coords[i][2];
-        renderer->buffer[offset + i].texture_coordinates[3] = texture_coords[i][3];
+        renderer->buffer[offset + i].textureIndex = -1.0f;
     }
 
-    renderer->quad_count++;
-    if (renderer->quad_count == renderer->max_quads_per_batch) {
-        flush_quads(renderer);
+    renderer->currentQuadCount++;
+    if (renderer->currentQuadCount == renderer->maxQuadsPerBatch) {
+        salamander_flushRenderer(renderer);
     }
 }
 
-void add_texture(struct Renderer *renderer, struct Texture texture, vec2 position, vec2 scale) {
-    //TODO: copy pasta
-    int offset = renderer->quad_count * VERTICES_PER_QUAD;
+void salamander_drawTexture(struct Renderer *renderer, struct Texture texture, vec2 position, vec2 scale) {
+    int offset = renderer->currentQuadCount * VERTICES_PER_QUAD;
 
-    mat4 position_matrix;
-    glm_mat4_identity(position_matrix);
-    glm_translate(position_matrix, (vec3){ position[0], position[1], 0.0f });
+    mat4 positionMatrix;
+    glm_mat4_identity(positionMatrix);
+    glm_translate(positionMatrix, (vec3){ position[0], position[1], 0.0f });
 
-    mat4 scale_matrix;
-    glm_mat4_identity(scale_matrix);
-    glm_scale(scale_matrix, (vec3){ texture.width * scale[0], texture.height * scale[1], 1.0f });
+    mat4 scaleMatrix;
+    glm_mat4_identity(scaleMatrix);
+    glm_scale(scaleMatrix, (vec3){ texture.width * scale[0], texture.height * scale[1], 1.0f });
 
     mat4 transform;
-    glm_mat4_mul(position_matrix, scale_matrix, transform);
+    glm_mat4_mul(positionMatrix, scaleMatrix, transform);
 
     //proper screen space geometry
-    vec4 quad_vertex_positions[4] = {
+    vec4 quadVertexPositions[4] = {
             { 0.0f, 0.0f, 0.0f, 1.0f },
             { 1.0f, 0.0f, 0.0f, 1.0f },
             { 1.0f, 1.0f, 0.0f, 1.0f },
             { 0.0f, 1.0f, 0.0f, 1.0f }
     };
 
-    vec2 texture_coords[4] = {
+    vec2 quadTextureCoordinates[4] = {
             { 0.0f, 0.0f },
             { 1.0f, 0.0f },
             { 1.0f, 1.0f },
@@ -319,21 +287,21 @@ void add_texture(struct Renderer *renderer, struct Texture texture, vec2 positio
     };
 
     //TODO: do we want to use a pointer to the texture or just pass the whole struct?
-    float tex_index = -1.0f;
+    float textureIndex = -1.0f;
     for (int i = 0; i < RENDERER_TEXTURE_SLOTS; i++) {
-        if (renderer->texture_slots[i].id == texture.id) {
-            tex_index = (float)i;
+        if (renderer->textureSlots[i].id == texture.id) {
+            textureIndex = (float)i;
         }
     }
 
-    if (tex_index == -1.0f) {
-        tex_index = (float)renderer->current_slot;
-        renderer->texture_slots[renderer->current_slot++] = texture;
+    if (textureIndex == -1.0f) {
+        textureIndex = (float)renderer->currentTextureIndex;
+        renderer->textureSlots[renderer->currentTextureIndex++] = texture;
     }
 
     for (int i = 0; i < 4; i++) {
         vec4 p;
-        glm_mat4_mulv(transform, quad_vertex_positions[i], p);
+        glm_mat4_mulv(transform, quadVertexPositions[i], p);
 
         //NOTE: a bit verbose but makes more sense than a memcpy
         renderer->buffer[offset + i].position[0] = p[0];
@@ -346,30 +314,30 @@ void add_texture(struct Renderer *renderer, struct Texture texture, vec2 positio
         renderer->buffer[offset + i].colour[2] = 1.0f;
         renderer->buffer[offset + i].colour[3] = 1.0f;
 
-        renderer->buffer[offset + i].texture_coordinates[0] = texture_coords[i][0];
-        renderer->buffer[offset + i].texture_coordinates[1] = texture_coords[i][1];
+        renderer->buffer[offset + i].textureCoordinates[0] = quadTextureCoordinates[i][0];
+        renderer->buffer[offset + i].textureCoordinates[1] = quadTextureCoordinates[i][1];
 
-        renderer->buffer[offset + i].texture_index = tex_index;
+        renderer->buffer[offset + i].textureIndex = textureIndex;
     }
 
-    renderer->quad_count++;
-    if (renderer->quad_count == renderer->max_quads_per_batch) {
-        flush_quads(renderer);
+    renderer->currentQuadCount++;
+    if (renderer->currentQuadCount == renderer->maxQuadsPerBatch) {
+        salamander_flushRenderer(renderer);
     }
 }
 
-void flush_quads(struct Renderer *renderer) {
-    int buffer_size = sizeof(struct Vertex) * VERTICES_PER_QUAD * renderer->quad_count;
-    int index_count = INDICIES_PER_QUAD * renderer->quad_count;
+void salamander_flushRenderer(struct Renderer *renderer) {
+    int bufferSize = sizeof(struct Vertex) * VERTICES_PER_QUAD * renderer->currentQuadCount;
+    int elementCount = INDICIES_PER_QUAD * renderer->currentQuadCount;
 
-    for (int i = 0; i < renderer->current_slot; i++) {
-        struct Texture texture = renderer->texture_slots[i];
+    for (int i = 0; i < renderer->currentTextureIndex; i++) {
+        struct Texture texture = renderer->textureSlots[i];
         glBindTextureUnit(i, texture.id);
     }
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_size, renderer->buffer);
-    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, NULL);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSize, renderer->buffer);
+    glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_INT, NULL);
 
-    renderer->quad_count = 0;
-    renderer->current_slot = 0;
+    renderer->currentQuadCount = 0;
+    renderer->currentTextureIndex = 0;
 }
