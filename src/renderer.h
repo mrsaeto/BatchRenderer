@@ -14,20 +14,37 @@ struct Texture {
     int height;
 };
 
-struct Shader salamander_loadShader(char *path);
-void salamander_useShader(struct Shader shader);
+// shader code
+struct Shader loadShader(char *path);
+void useShader(struct Shader shader);
 
-void salamander_setShaderMat4(struct Shader shader, char *uniform, mat4 matrix);
+void setShaderMat4(struct Shader shader, char *uniform, mat4 matrix);
 
+// renderer
 struct Renderer;
+struct Renderer *createRenderer(int maxQuadsPerBatch);
 
-struct Renderer *salamander_createRenderer(int maxQuadsPerBatch);
+void clearRenderer(vec4 colour);
 
-void salamander_clearRenderer(vec4 colour);
+void drawQuad(struct Renderer *renderer, vec2 position, vec2 size, vec4 colour);
+void drawTexture(struct Renderer *renderer, struct Texture texture, vec2 position, vec2 scale);
 
-void salamander_drawQuad(struct Renderer *renderer, vec2 position, vec2 size, vec4 colour);
-void salamander_drawTexture(struct Renderer *renderer, struct Texture texture, vec2 position, vec2 scale);
+void flushRenderer(struct Renderer *renderer);
 
-void salamander_flushRenderer(struct Renderer *renderer);
+// image stuff
+struct Image {
+    void *pixels;
+    int width;
+    int height;
+    
+    int bytesPerPixel;
+    int pitch;
+};
+
+struct Image loadImage(char *path);
+void freeImage(struct Image *image);
+
+struct Texture loadTexture(char *path);
+void freeTexture(struct Texture *texture);
 
 #endif

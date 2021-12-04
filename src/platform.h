@@ -8,31 +8,31 @@
 
 struct Platform {
     void *nativeWindow;
-
+    
     int windowWidth;
     int windowHeight;
-
+    
     bool windowClosed;
-
+    
     //Input state
     u8 keyState[INPUT_KEY_BUFFER_SIZE];
     u8 buttonState[INPUT_BUTTON_BUFFER_SIZE];
-
+    
     float mouseX;
     float mouseY;
-
+    
     //Polling functions
     bool (*isKeyDown)(int);
     bool (*isKeyPressed)(int);
     bool (*isKeyReleased)(int);
-
+    
     bool (*isMouseButtonDown)(int);
     bool (*isMouseButtonPressed)(int);
     bool (*isMouseButtonReleased)(int);
 };
 
-struct Platform *salamander_createPlatform(char *title, int width, int height);
-void salamander_updatePlatform(struct Platform *platform);
+struct Platform *createPlatform(char *title, int width, int height);
+void updatePlatform(struct Platform *platform);
 
 typedef struct {
     int size;
